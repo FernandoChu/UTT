@@ -6,8 +6,12 @@ jobs:
     container: shiranaiyo/agda:2.6.2.2
 
     steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
       - name: Install agda libraries
         run: |
+          echo $HOME
           mkdir -p $HOME/.agda
           cd $HOME/.agda
 
@@ -18,12 +22,10 @@ jobs:
           wget -O agda-categories.tar https://github.com/agda/agda-categories/archive/refs/tags/v0.1.7.1a.tar.gz
           tar -zxvf agda-categories.tar
           echo '$HOME/agda-categories-0.1.7.1a/agda-categories.agda-lib' >> $HOME/.agda/libraries
-
-      - name: Checkout 🛎️
-        uses: actions/checkout@v3
-
+          
       - name: Install and Build 🔧
         run: |
+          echo $HOME
           apt-get update && apt-get install -y rsync
           npm ci
           npm run build
