@@ -6,6 +6,21 @@ jobs:
     container: shiranaiyo/agda:2.6.2.2
 
     steps:
+      - name: test
+        run: |
+          ls
+          cd
+          ls
+          wget -O agda-stdlib.tar https://github.com/agda/agda-stdlib/archive/v1.7.1.tar.gz
+          ls
+          tar -zxvf agda-stdlib.tar
+          ls
+          cd $HOME/.agda
+          ls
+          cat libraries
+          ls
+          echo '~/agda-stdlib-1.7.1/standard-library.agda-lib' >> $HOME/.agda/libraries
+          cat libraries
       - name: Checkout 🛎️
         uses: actions/checkout@v3
 
