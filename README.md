@@ -1,2 +1,2 @@
 # Unary Type Theory (WIP)
-Categorical semantics in agda.
+Categorical semantics for Unary Type Theory in agda.
