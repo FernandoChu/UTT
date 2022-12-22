@@ -10,13 +10,7 @@ open import Level using (Level; _⊔_; suc)
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; refl; sym; trans; subst; cong)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.Unit using (⊤; tt)
-open import Function using (_∘_)
-open import Function.Equivalence using (_⇔_; equivalence)
-open import Relation.Nullary using (¬_; Dec; yes; no)
-open import Relation.Nullary.Decidable using (map)
-open import Relation.Nullary.Negation using (contraposition)
-open import Relation.Nullary.Product using (_×-dec_)
+open import Relation.Nullary using (yes; no)
 open import Data.String using (String; _≟_)
 
 open import Categories.Category.Core using (Category)
@@ -64,8 +58,8 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
   subst-id : ∀ {x} m
         → m [ x := (` x) ] ≡ m
   subst-id {x} (` y) with y ≟ x
-  ... | yes p         = cong (`_) (sym p)
-  ... | no  _         = refl
+  ... | yes refl       = refl
+  ... | no  _          = refl
   subst-id {x} (L · M) = cong (L ·_) (subst-id M)
 ```
 
@@ -84,6 +78,14 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
       → domain f ≡ β
         ------------------------------
       → (x ⦂ α) ⊢ (f · m) ˸ codomain f
+
+  record ProvedTerm : Set (suc (ℓ₁ ⊔ ℓ₂)) where
+    constructor [_⊢_˸_][_]
+    field
+      ctx : Context
+      term : Term
+      type : Type
+      wit : ctx ⊢ term ˸ type
 
   unique-types : ∀ {x α m β γ}
     → (x ⦂ α) ⊢ m ˸ β
@@ -108,34 +110,40 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
   ⊢·-f₁ : ∀ {x α f m β}
     → (x ⦂ α) ⊢ f · m ˸ β
     → (x ⦂ α) ⊢ m ˸ (domain f)
-  ⊢·-f₁ {x} {α} {f} {m} (⊢· t p) =
-    subst (λ - → (x ⦂ α) ⊢ m ˸ -) (sym p) t
+  ⊢·-f₁ {x} {α} {f} {m} (⊢· t refl) = t
 
   ⊢·-f₂ : ∀ {x α f m γ}
     → (x ⦂ α) ⊢ f · m ˸ γ
     → codomain f ≡ γ
-  ⊢·-f₂ {x} {α} {f} {m} (⊢· t p) = refl
+  ⊢·-f₂ {x} {α} {f} {m} (⊢· t refl) = refl
 
   rename : ∀ {x α m β y}
     → ((x ⦂ α) ⊢ m ˸ β)
       ----------------------------------
     → ((y ⦂ α) ⊢ (m [ x := (` y) ]) ˸ β)
   rename {x} {α} {m = ` z} {y = y} t with z ≟ x
-  ... | yes _   = subst (λ - → (y ⦂ α) ⊢ ` y ˸ -) (⊢`-uniq₂ t) ⊢`
-  ... | no  x≢y = ⊥-elim (x≢y (sym (⊢`-uniq₁ t)))
+  ... | yes refl   = subst (λ - → (y ⦂ α) ⊢ ` y ˸ -) (⊢`-uniq₂ t) ⊢`
+  ... | no  x≢y    = ⊥-elim (x≢y (sym (⊢`-uniq₁ t)))
   rename {x} {α} {m = f · m} {y = y} t =
     subst (λ - → (y ⦂ α) ⊢ f · m [ x := ` y ] ˸ -)
       (⊢·-f₂ t) (⊢· (rename {y = y} (⊢·-f₁ t)) refl)
 
   ⊢-subst : ∀ {x α m β y θ n}
-        → ((x ⦂ α) ⊢ m ˸ β)
-        → ((y ⦂ θ) ⊢ n ˸ α)
-        --------------------------------
-        → ((y ⦂ θ) ⊢ (m [ x := n ]) ˸ β)
+    → ((x ⦂ α) ⊢ m ˸ β)
+    → ((y ⦂ θ) ⊢ n ˸ α)
+    --------------------------------
+    → ((y ⦂ θ) ⊢ (m [ x := n ]) ˸ β)
   ⊢-subst {x} ⊢` t with x ≟ x
-  ... | yes _ = t
+  ... | yes _  = t
   ... | no x≢x = ⊥-elim (x≢x refl)
-  ⊢-subst (⊢· t' p) t = ⊢· (⊢-subst t' t) p
+  ⊢-subst (⊢· t' refl) t = ⊢· (⊢-subst t' t) refl
+
+  `-subst : ∀ {x n}
+    -----------------------
+    →  (` x) [ x := n ] ≡ n
+  `-subst {x} with x ≟ x
+  ... | yes _  = refl
+  ... | no x≢x = ⊥-elim (x≢x refl)
 ```
 
 ## 1.3. Theories
@@ -167,16 +175,17 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
        → (x ⦂ α) ⊢ m ＝ m' ˸ β
        → (y ⦂ γ) ⊢ n ＝ n' ˸ α
        → (y ⦂ γ) ⊢ (m [ x := n ]) ＝ (m' [ x := n' ]) ˸ β
-  ⊢＝-subst (⊢＝ e e') (⊢＝ e'' e''') = ⊢＝ (⊢-subst e e'') (⊢-subst e' e''')
+  ⊢＝-subst (⊢＝ e e') (⊢＝ e'' e''') =
+    ⊢＝ (⊢-subst e e'') (⊢-subst e' e''')
 
-  record Equation : Set (suc (ℓ₁ ⊔ ℓ₂)) where
+  record Equation : Set (ℓ₁ ⊔ ℓ₂) where
     constructor [_⊢_＝_˸_][_]
     field
       ctx : Context
       termˡ : Term
       termʳ : Term
       type : Type
-      eq : ctx ⊢ termˡ ＝ termʳ ˸ type
+      wit : ctx ⊢ termˡ ＝ termʳ ˸ type
 
   record Theory : Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃)) where
     field
@@ -218,7 +227,8 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
        → Theorem [ (x ⦂ α) ⊢ m ＝ m' ˸ β ][ e ]
        → Theorem [ (y ⦂ γ) ⊢ n ＝ n' ˸ α ][ e' ]
          -------------------
-       → Theorem [ (y ⦂ γ) ⊢ (m [ x := n ]) ＝ (m' [ x := n' ]) ˸ β ][ ⊢＝-subst e e' ]
+       → Theorem [ (y ⦂ γ) ⊢ (m [ x := n ]) ＝
+           (m' [ x := n' ]) ˸ β ][ ⊢＝-subst e e' ]
 ```
 
 # 2. Semantics
@@ -230,16 +240,98 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
     field
       𝒞 : Category ℓ₄ ℓ₅ ℓ₆
       ⟦_⟧ₒ : Type → Category.Obj 𝒞
-      ⟦_⟧ₐ : (f : Function) → Category._⇒_ 𝒞 ⟦ domain f ⟧ₒ ⟦ codomain f ⟧ₒ
+      ⟦_⟧ₐ : (f : Function)
+           → Category._⇒_ 𝒞 ⟦ domain f ⟧ₒ ⟦ codomain f ⟧ₒ
+
+module _ (Sg : Signature {ℓ₁} {ℓ₂})
+         (Th : sigs.Theory {ℓ₁} {ℓ₂} Sg {ℓ₃})
+         (ℳ : Structure Sg Th {ℓ₄} {ℓ₅} {ℓ₆}) where
+  open sigs Sg
+  open Theory Th
+  open Structure ℳ
+  open Category 𝒞
+  open HomReasoning
+
+  Ctx⟦_⟧ : Context → Obj
+  Ctx⟦ x ⦂ α ⟧ = ⟦ α ⟧ₒ
+
+  ⟦⟧-helper : ∀ ctx m β
+    → (ctx ⊢ m ˸ β)
+    → (Ctx⟦ ctx ⟧) ⇒ (⟦ β ⟧ₒ)
+  ⟦⟧-helper (x ⦂ α) m β ⊢` = id
+  ⟦⟧-helper (x ⦂ α) (f · m) β (⊢· {β = θ} t refl) =
+    ⟦ f ⟧ₐ ∘ (⟦⟧-helper (x ⦂ α) m θ t)
+
+  ⟦_⟧ : (t : ProvedTerm)
+      → (Ctx⟦ ProvedTerm.ctx t ⟧) ⇒ (⟦ ProvedTerm.type t ⟧ₒ)
+  ⟦ [ ctx ⊢ term ˸ type ][ wit ] ⟧ = ⟦⟧-helper ctx term type wit
+
+  ⟦⟧-irrelevance : ∀ {x α m m' β}
+    → m ≡ m'
+    → (w : (x ⦂ α) ⊢ m ˸ β)
+    → (w' : (x ⦂ α) ⊢ m' ˸ β)
+    → ⟦ [ (x ⦂ α) ⊢ m ˸ β ][ w ] ⟧ ≡ ⟦ [ (x ⦂ α) ⊢ m' ˸ β ][ w' ] ⟧
+  ⟦⟧-irrelevance {x} {α} {(` x)} refl ⊢` ⊢` = refl
+  ⟦⟧-irrelevance {x} {α} {(f · m)} {β} refl (⊢· w refl) (⊢· w' refl) =
+    cong (⟦ f ⟧ₐ ∘_) (⟦⟧-irrelevance refl w w')
+
+  ⟦⟧-subst : ∀ {x α m β y θ n}
+    → (w : (x ⦂ α) ⊢ m ˸ β)
+    → (w' : (y ⦂ θ) ⊢ n ˸ α)
+    --------------------------------
+    → (⟦ [ (y ⦂ θ) ⊢ (m [ x := n ]) ˸ β ][ ⊢-subst w w' ] ⟧) ≈
+        (⟦ [ (x ⦂ α) ⊢ m ˸ β ][ w ] ⟧) ∘
+        (⟦ [ (y ⦂ θ) ⊢ n ˸ α ][ w' ] ⟧)
+  ⟦⟧-subst {x} {α} {` x} {β} {y} {θ} {n} ⊢` w = begin
+    ⟦ [ y ⦂ θ ⊢ (` x) [ x := n ] ˸ α ][ ⊢-subst ⊢` w ] ⟧ ≡⟨ irrelevant ⟩
+    ⟦ [ y ⦂ θ ⊢ n ˸ α ][ w ] ⟧                           ≈˘⟨ identityˡ ⟩
+    id ∘ ⟦ [ y ⦂ θ ⊢ n ˸ α ][ w ] ⟧                      ≡⟨⟩
+    ⟦ [ x ⦂ α ⊢ ` x ˸ α ][ ⊢` ] ⟧ ∘ ⟦ [ y ⦂ θ ⊢ n ˸ α ][ w ] ⟧ ∎
+   where
+    irrelevant = ⟦⟧-irrelevance (`-subst {x} {n}) (⊢-subst ⊢` w) w
+
+  ⟦⟧-subst {x} {α} {f · m} {β} {y} {θ} {n} (⊢· t refl) w = begin
+    ⟦ [ y ⦂ θ ⊢ (f · m) [ x := n ] ˸ β ][ ⊢-subst (⊢· t refl) w ] ⟧ ≡⟨⟩
+    ⟦ [ y ⦂ θ ⊢ f · (m [ x := n ]) ˸ β ][ ⊢-subst (⊢· t refl) w ] ⟧ ≡⟨⟩
+    ⟦ f ⟧ₐ ∘ ⟦ [ y ⦂ θ ⊢ m [ x := n ] ˸ domain f ][ ⊢-subst t w  ] ⟧ ≈⟨ ind ⟩
+    ⟦ f ⟧ₐ ∘ ((⟦ [ (x ⦂ α) ⊢ m ˸ domain f ][ t ] ⟧) ∘
+               (⟦ [ (y ⦂ θ) ⊢ n ˸ α ][ w ] ⟧)) ≈˘⟨ assoc ⟩
+    (⟦ f ⟧ₐ ∘ (⟦ [ (x ⦂ α) ⊢ m ˸ domain f ][ t ] ⟧)) ∘
+               (⟦ [ (y ⦂ θ) ⊢ n ˸ α ][ w ] ⟧) ≈⟨ rearrenge ⟩
+    ⟦ [ x ⦂ α ⊢ f · m ˸ β ][ ⊢· t refl ] ⟧ ∘
+      ⟦ [ y ⦂ θ ⊢ n ˸ α ][ w ] ⟧ ∎
+   where
+    ind = ∘-resp-≈ʳ (⟦⟧-subst t w)
+    rearrenge = ∘-resp-≈ˡ Equiv.refl
 ```
 
 
-## 2.1. Structures
+## 2.2. Models
 
 ```agda
 
 ```
 
-## 2.1. Structures
+## 2.3. Categories of Models
 
 ```agda
+
+```
+
+## 2.4. Clasifying category
+
+```agda
+
+```
+
+## 2.5. Correspondence Theorem
+
+```agda
+
+```
+
+## 3. Example
+
+```agda
+
+```
