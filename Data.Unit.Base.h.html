@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es" xml:lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title></title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700;1,800&family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap"
+        rel="stylesheet" />
+</head>
+
+<body class="text-page">
+    <main>
+        <div id="post-toc-container" style="padding-left: 1em; padding-right: 1em">
+            <article>
+<a href="index.html">Back to index</a>
+<p><a id="1" class="Comment">------------------------------------------------------------------------</a>
+<a id="74" class="Comment">-- The Agda standard library</a>
+<a id="103" class="Comment">--</a>
+<a id="106" class="Comment">-- The unit type and the total relation on unit</a>
+<a id="154" class="Comment">------------------------------------------------------------------------</a></p>
+<p><a id="228" class="Symbol">{-#</a> <a id="232" class="Keyword">OPTIONS</a> <a id="240" class="Pragma">--without-K</a> <a id="252" class="Pragma">--safe</a> <a id="259" class="Symbol">#-}</a></p>
+<p><a id="264" class="Keyword">open</a> <a id="269" class="Keyword">import</a> <a id="276" href="Agda.Builtin.Equality.html" class="Module">Agda.Builtin.Equality</a> <a id="298" class="Keyword">using</a> <a id="304" class="Symbol">(</a><a id="305" href="Agda.Builtin.Equality.html#151" class="Datatype Operator"><em>≡</em></a><a id="308" class="Symbol">)</a></p>
+<p><a id="311" class="Keyword">module</a> <a id="318" href="Data.Unit.Base.html" class="Module">Data.Unit.Base</a> <a id="333" class="Keyword">where</a></p>
+<p><a id="340" class="Comment">------------------------------------------------------------------------</a>
+<a id="413" class="Comment">-- A unit type defined as a record type</a></p>
+<p><a id="454" class="Comment">-- Note that by default the unit type is not universe polymorphic as it</a>
+<a id="526" class="Comment">-- often results in unsolved metas. See <code>Data.Unit.Polymorphic</code> for a</a>
+<a id="596" class="Comment">-- universe polymorphic variant.</a></p>
+<p><a id="630" class="Comment">-- Note also that the name of this type is &quot;\top&quot;, not T.</a></p>
+<p><a id="689" class="Keyword">open</a> <a id="694" class="Keyword">import</a> <a id="701" href="Agda.Builtin.Unit.html" class="Module">Agda.Builtin.Unit</a> <a id="719" class="Keyword">public</a>
+  <a id="728" class="Keyword">using</a> <a id="734" class="Symbol">(</a><a id="735" href="Agda.Builtin.Unit.html#164" class="Record">⊤</a><a id="736" class="Symbol">;</a> <a id="738" href="Agda.Builtin.Unit.html#201" class="InductiveConstructor">tt</a><a id="740" class="Symbol">)</a></p>
+<p><a id="743" class="Comment">------------------------------------------------------------------------</a>
+<a id="816" class="Comment">-- DEPRECATED NAMES</a>
+<a id="836" class="Comment">------------------------------------------------------------------------</a>
+<a id="909" class="Comment">-- Please use the new names as continuing support for the old names is</a>
+<a id="980" class="Comment">-- not guaranteed.</a></p>
+<p><a id="1000" class="Comment">-- Version 1.2</a></p>
+<p><a id="1016" class="Keyword">record</a> <a id="_≤_"></a><a id="1023" href="Data.Unit.Base.html#1023" class="Record Operator"><em>≤</em></a> <a id="1027" class="Symbol">(</a><a id="1028" href="Data.Unit.Base.html#1028" class="Bound">x</a> <a id="1030" href="Data.Unit.Base.html#1030" class="Bound">y</a> <a id="1032" class="Symbol">:</a> <a id="1034" href="Agda.Builtin.Unit.html#164" class="Record">⊤</a><a id="1035" class="Symbol">)</a> <a id="1037" class="Symbol">:</a> <a id="1039" href="Agda.Primitive.html#326" class="Primitive">Set</a> <a id="1043" class="Keyword">where</a>
+<a id="1049" class="Symbol">{-#</a> <a id="1053" class="Keyword">WARNING<em>ON</em>USAGE</a> <a id="1070" class="Pragma"><em>≤</em></a>
+<a id="1074" class="String">&quot;Warning: <em>≤</em> was deprecated in v1.2.
+Please use <em>≡</em> from Relation.Binary.PropositionalEquality instead.&quot;</a>
+<a id="1180" class="Symbol">#-}</a></p>
+            </article>
+        </div>
+    </main>
+</body>
+</html>

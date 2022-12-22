@@ -1,7 +1,0 @@
-name: hott-book
-include: src
-depend: standard-library
-        agda-categories
-flags: --exact-split
-       --auto-inline
-       --safe
