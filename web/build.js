@@ -52,6 +52,8 @@ async function build() {
       }
     }
 
+    await exec("rm ./html/index.md");
+
     // Paste styles.css
     await exec("cp ./web/styles.css ./html/styles.css");
   } catch (e) {
