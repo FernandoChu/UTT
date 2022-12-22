@@ -23,12 +23,12 @@ async function build() {
       // Read file
       const fileContents = await fs.readFile(`./html/${file}`, "utf8");
 
-      if (file === "Agda.Primitive.html") {
+      if (file !== "index.html") {
         await fs.writeFile(
           `./html/${file}`,
           template({
             body: `<pre class="Agda">${fileContents}</pre>`,
-            title: "Agda Primitives",
+            // title: "Agda Primitives",
             backToIndex: `<a href="index.html">Back to index</a>`,
           })
         );

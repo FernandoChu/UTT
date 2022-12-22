@@ -10,8 +10,6 @@ open import Level using (Level; _⊔_; suc)
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; refl; sym; trans; subst; cong)
 open import Data.Empty using (⊥; ⊥-elim)
--- open import Data.Nat using (ℕ; zero; suc; _+_; _∸_)
-open import Data.Product using (_×_) renaming (_,_ to ⟨_,_⟩)
 open import Data.Unit using (⊤; tt)
 open import Function using (_∘_)
 open import Function.Equivalence using (_⇔_; equivalence)
@@ -20,20 +18,27 @@ open import Relation.Nullary.Decidable using (map)
 open import Relation.Nullary.Negation using (contraposition)
 open import Relation.Nullary.Product using (_×-dec_)
 open import Data.String using (String; _≟_)
+
+open import Categories.Category.Core using (Category)
 ```
 
-# Syntax
+# 1. Syntax
+
+## 1.1. Terms
 
 ```agda
-record Signature (ℓ₁ ℓ₂ : Level) : Set (suc (ℓ₁ ⊔ ℓ₂)) where
+variable
+  ℓ₁ ℓ₂ ℓ₃ ℓ₄ ℓ₅ ℓ₆ : Level
+
+record Signature : Set (suc (ℓ₁ ⊔ ℓ₂)) where
   field
     Type : Set ℓ₁
     Function : Set ℓ₂
     domain : Function → Type
     codomain : Function → Type
 
-module sigs {ℓ₁ ℓ₂} (Sg : Signature ℓ₁ ℓ₂) where
-  open Signature Sg
+module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
+  open Signature Sg public
 
   Id : Set
   Id = String
@@ -64,7 +69,7 @@ module sigs {ℓ₁ ℓ₂} (Sg : Signature ℓ₁ ℓ₂) where
   subst-id {x} (L · M) = cong (L ·_) (subst-id M)
 ```
 
-# Proved Terms
+## 1.2 Proved Terms
 
 ```agda
   data Context : Set ℓ₁ where
@@ -133,7 +138,7 @@ module sigs {ℓ₁ ℓ₂} (Sg : Signature ℓ₁ ℓ₂) where
   ⊢-subst (⊢· t' p) t = ⊢· (⊢-subst t' t) p
 ```
 
-# Theories
+## 1.3. Theories
 
 ```agda
   data _⊢_＝_˸_ : Context → Term → Term → Type → Set (ℓ₁ ⊔ ℓ₂) where
@@ -173,12 +178,16 @@ module sigs {ℓ₁ ℓ₂} (Sg : Signature ℓ₁ ℓ₂) where
       type : Type
       eq : ctx ⊢ termˡ ＝ termʳ ˸ type
 
-  record Theory (ℓ₃ : Level) : Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃)) where
+  record Theory : Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃)) where
     field
       Axiom : Equation → Set ℓ₃
+```
 
-module _ {ℓ₁ ℓ₂ ℓ₃} (Sg : Signature ℓ₁ ℓ₂)
-         (Th : sigs.Theory {ℓ₁} {ℓ₂} Sg ℓ₃) where
+## 1.4. Theorems
+
+```agda
+module _ (Sg : Signature {ℓ₁} {ℓ₂})
+         (Th : sigs.Theory {ℓ₁} {ℓ₂} Sg {ℓ₃}) where
   open sigs Sg
   open Theory Th
 
@@ -211,3 +220,26 @@ module _ {ℓ₁ ℓ₂ ℓ₃} (Sg : Signature ℓ₁ ℓ₂)
          -------------------
        → Theorem [ (y ⦂ γ) ⊢ (m [ x := n ]) ＝ (m' [ x := n' ]) ˸ β ][ ⊢＝-subst e e' ]
 ```
+
+# 2. Semantics
+
+## 2.1. Structures
+
+```agda
+  record Structure : Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₄ ⊔ ℓ₅ ⊔ ℓ₆)) where
+    field
+      𝒞 : Category ℓ₄ ℓ₅ ℓ₆
+      ⟦_⟧ₒ : Type → Category.Obj 𝒞
+      ⟦_⟧ₐ : (f : Function) → Category._⇒_ 𝒞 ⟦ domain f ⟧ₒ ⟦ codomain f ⟧ₒ
+```
+
+
+## 2.1. Structures
+
+```agda
+
+```
+
+## 2.1. Structures
+
+```agda

@@ -143,7 +143,7 @@ aside#toc > div#toc-container ul a[href]:visited {
   /* NameKinds. */
   /* OtherAspects. */
   /* Standard attributes. */
-  font-family: "iosevka", "Iosevka", "JuliaMono-Light", "Fantasque Sans Mono", "Roboto Mono",
+  font-family: "JuliaMono-Light", "iosevka", "Iosevka", "Fantasque Sans Mono", "Roboto Mono",
     monospace;
   font-weight: 400;
 }
