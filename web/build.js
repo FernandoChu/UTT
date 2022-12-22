@@ -23,7 +23,7 @@ async function build() {
       // Read file
       const fileContents = await fs.readFile(`./html/${file}`, "utf8");
 
-      if (file !== "index.html") {
+      if (file !== "index.md") {
         await fs.writeFile(
           `./html/${file}`,
           template({
