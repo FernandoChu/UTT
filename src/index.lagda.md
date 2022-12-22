@@ -1,6 +1,6 @@
 ---
 title: Unary Type Theory
-index: true
+isIndex: true
 ---
 
 ```agda
