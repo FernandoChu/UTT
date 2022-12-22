@@ -13,7 +13,7 @@ jobs:
         run: |
           echo $HOME
           mkdir -p $HOME/.agda
-          cd $HOME/.agda
+          cd $HOME
 
           wget -O agda-stdlib.tar https://github.com/agda/agda-stdlib/archive/v1.7.1.tar.gz
           tar -zxvf agda-stdlib.tar
@@ -22,7 +22,8 @@ jobs:
           wget -O agda-categories.tar https://github.com/agda/agda-categories/archive/refs/tags/v0.1.7.1a.tar.gz
           tar -zxvf agda-categories.tar
           echo '$HOME/agda-categories-0.1.7.1a/agda-categories.agda-lib' >> $HOME/.agda/libraries
-          
+          ls $HOME
+
       - name: Install and Build 🔧
         run: |
           echo $HOME
