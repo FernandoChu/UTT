@@ -1,8 +1,3 @@
-@font-face {
-    font-family: JuliaMono-Light;
-    src: url("https://cdn.jsdelivr.net/gh/cormullion/juliamono/webfonts/JuliaMono-Light.woff2");
-}
-
 :root {
   --text-bg: #fff;
   --text-fg: #222;
@@ -143,7 +138,7 @@ aside#toc > div#toc-container ul a[href]:visited {
   /* NameKinds. */
   /* OtherAspects. */
   /* Standard attributes. */
-  font-family: "JuliaMono-Light", "iosevka", "Iosevka", "Fantasque Sans Mono", "Roboto Mono",
+  font-family: "iosevka", "Iosevka", "Fantasque Sans Mono", "Roboto Mono",
     monospace;
   font-weight: 400;
 }
