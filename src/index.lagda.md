@@ -309,6 +309,48 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
 ## 2.2. Models
 
 ```agda
+  satisfies : Equation → Set ℓ₆
+  satisfies [ x ⦂ α ⊢ m ＝ m' ˸ β ][ ⊢＝ w w' ] =
+    ⟦ [ (x ⦂ α) ⊢ m ˸ β ][ w ] ⟧ ≈ ⟦ [ (x ⦂ α) ⊢ m' ˸ β ][ w' ] ⟧
+
+  satisfies-irrelevance :
+      ∀ {x α m m' β w w'}
+    → satisfies [ (x ⦂ α) ⊢ m ＝ m' ˸ β ][ w ]
+    → satisfies [ (x ⦂ α) ⊢ m ＝ m' ˸ β ][ w' ]
+  satisfies-irrelevance {x} {α} {m} {m'} {β} {⊢＝ w₁ w₂} {⊢＝ w₁' w₂'} p =
+    begin
+      ⟦ [ x ⦂ α ⊢ m ˸ β ][ w₁' ]  ⟧ ≡⟨ ⟦⟧-irrelevance refl w₁' w₁ ⟩
+      ⟦ [ x ⦂ α ⊢ m ˸ β ][ w₁ ]   ⟧ ≈⟨ p ⟩
+      ⟦ [ x ⦂ α ⊢ m' ˸ β ][ w₂ ]  ⟧ ≡⟨ ⟦⟧-irrelevance refl w₂ w₂' ⟩
+      ⟦ [ x ⦂ α ⊢ m' ˸ β ][ w₂' ] ⟧ ∎
+
+  models : Set (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₆)
+  models = ∀ {eq}
+         → Axiom eq
+         → satisfies eq
+
+  Soundness : models
+        → ∀ eq
+        → Theorem Sg Th eq
+        → satisfies eq
+  Soundness M eq (Ax ax) = M ax
+  Soundness M eq (Th-refl t) = Equiv.refl
+  Soundness M eq (Th-sym {e = ⊢＝ e e'} T) =
+    Equiv.sym (Soundness M _ T)
+  Soundness M eq (Th-trans {x} {α} {m} {m'} {m''} {β} {⊢＝ e₁ e₁'} {⊢＝ e₂ e₂'} T T') =
+    begin
+      ⟦ [ x ⦂ α ⊢ m ˸ β ][ e₁ ]    ⟧ ≈⟨ Soundness M _ T ⟩
+      ⟦ [ x ⦂ α ⊢ m' ˸ β ][ e₁' ]  ⟧ ≡⟨ ⟦⟧-irrelevance refl e₁' e₂  ⟩
+      ⟦ [ x ⦂ α ⊢ m' ˸ β ][ e₂ ]   ⟧ ≈⟨ Soundness M _ T' ⟩
+      ⟦ [ x ⦂ α ⊢ m'' ˸ β ][ e₂' ] ⟧ ∎
+  Soundness M eq (Th-subst {x} {α} {m} {m'} {β} {⊢＝ {m' = m'} e₁ e₁'} {y} {θ} {n} {n'} {⊢＝ e₂ e₂'} T T') =
+    begin
+      ⟦ [ y ⦂ θ ⊢ m [ x := n ] ˸ β ][ ⊢-subst e₁ e₂ ]             ⟧ ≈⟨ ⟦⟧-subst e₁ e₂ ⟩
+      ⟦ [ x ⦂ α ⊢ m ˸ β ][ e₁ ] ⟧ ∘ ⟦ [ y ⦂ θ ⊢ n ˸ α ][ e₂ ]     ⟧ ≈⟨ ind ⟩
+      ⟦ [ x ⦂ α ⊢ m' ˸ β ][ e₁' ] ⟧ ∘ ⟦ [ y ⦂ θ ⊢ n' ˸ α ][ e₂' ] ⟧ ≈˘⟨ ⟦⟧-subst e₁' e₂' ⟩
+      ⟦ [ y ⦂ θ ⊢ m' [ x := n' ] ˸ β ][ ⊢-subst e₁' e₂' ]         ⟧ ∎
+   where
+    ind = ∘-resp-≈ (Soundness M _ T ) (Soundness M _ T')
 
 ```
 
