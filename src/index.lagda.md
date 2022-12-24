@@ -12,6 +12,7 @@ open Eq using (_≡_; refl; sym; trans; subst; cong)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Relation.Nullary using (yes; no)
 open import Data.String using (String; _≟_)
+open import Data.Product using (Σ; _,_; Σ-syntax)
 
 open import Categories.Category.Core using (Category)
 ```
@@ -41,8 +42,8 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
   infix  9  `_
 
   data Term : Set ℓ₂ where
-    `_                     :  Id → Term
-    _·_                    :  Function → Term → Term
+    `_  : Id → Term
+    _·_ : Function → Term → Term
 
   FV : Term → Id
   FV (` x) = x
@@ -66,18 +67,20 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
 ## 1.2 Proved Terms
 
 ```agda
+  infix 5  _⦂_
   data Context : Set ℓ₁ where
     _⦂_ : Id → Type → Context
 
+  infix 4 _⊢_˸_
   data _⊢_˸_ : Context → Term → Type → Set (ℓ₁ ⊔ ℓ₂) where
     ⊢` : ∀ {x α}
         -------------------
-      → (x ⦂ α) ⊢ (` x) ˸ α
+       → x ⦂ α ⊢ (` x) ˸ α
     ⊢· : ∀ {x α m β f}
-      → (x ⦂ α) ⊢ m ˸ β
-      → domain f ≡ β
-        ------------------------------
-      → (x ⦂ α) ⊢ (f · m) ˸ codomain f
+       → (x ⦂ α) ⊢ m ˸ β
+       → domain f ≡ β
+       ------------------------------
+       → (x ⦂ α) ⊢ (f · m) ˸ codomain f
 
   record ProvedTerm : Set (suc (ℓ₁ ⊔ ℓ₂)) where
     constructor [_⊢_˸_][_]
@@ -236,20 +239,20 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
 ## 2.1. Structures
 
 ```agda
-  record Structure : Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₄ ⊔ ℓ₅ ⊔ ℓ₆)) where
+  record Structure (𝒞 : Category ℓ₄ ℓ₅ ℓ₆) : Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₄ ⊔ ℓ₅ ⊔ ℓ₆)) where
     field
-      𝒞 : Category ℓ₄ ℓ₅ ℓ₆
       ⟦_⟧ₒ : Type → Category.Obj 𝒞
       ⟦_⟧ₐ : (f : Function)
            → Category._⇒_ 𝒞 ⟦ domain f ⟧ₒ ⟦ codomain f ⟧ₒ
 
 module _ (Sg : Signature {ℓ₁} {ℓ₂})
          (Th : sigs.Theory {ℓ₁} {ℓ₂} Sg {ℓ₃})
-         (ℳ : Structure Sg Th {ℓ₄} {ℓ₅} {ℓ₆}) where
+         (𝒞 : Category ℓ₄ ℓ₅ ℓ₆)
+         (ℳ : Structure Sg Th 𝒞) where
   open sigs Sg
   open Theory Th
-  open Structure ℳ
   open Category 𝒞
+  open Structure ℳ
   open HomReasoning
 
   Ctx⟦_⟧ : Context → Obj
@@ -357,6 +360,48 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
 ## 2.3. Categories of Models
 
 ```agda
+module _ (Sg : Signature {ℓ₁} {ℓ₂})
+         (Th : sigs.Theory {ℓ₁} {ℓ₂} Sg {ℓ₃}) where
+  open sigs Sg
+  open Theory Th
+
+  ModelType : Category ℓ₄ ℓ₅ ℓ₆ → Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₄ ⊔ ℓ₅ ⊔ ℓ₆))
+  ModelType 𝒞 = Σ (Structure Sg Th 𝒞) (λ ℳ → models Sg Th 𝒞 ℳ)
+
+  module _ (𝒞 : Category ℓ₄ ℓ₅ ℓ₆)
+           ((ℳ , ℳ⟦⟧) (𝒩 , 𝒩⟦⟧) : ModelType 𝒞) where
+    open Category 𝒞
+    ℳ⟦_⟧ₒ = Structure.⟦_⟧ₒ ℳ
+    𝒩⟦_⟧ₒ = Structure.⟦_⟧ₒ 𝒩
+    ℳ⟦_⟧ₐ = Structure.⟦_⟧ₐ ℳ
+    𝒩⟦_⟧ₐ = Structure.⟦_⟧ₐ 𝒩
+
+    ModelHomomorphism : Set (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₅ ⊔ ℓ₆)
+    ModelHomomorphism  =
+        (h : (α : Type) →  ℳ⟦ α ⟧ₒ ⇒ 𝒩⟦ α ⟧ₒ)
+      → (f : Function)
+      → (h (codomain f) ∘ ℳ⟦ f ⟧ₐ) ≈ (𝒩⟦ f ⟧ₐ ∘ h (domain f))
+
+  -- ℳℴ𝒹 : Category ℓ₄ ℓ₅ ℓ₆ → Category (suc ℓ₁ ⊔ suc ℓ₂ ⊔ suc ℓ₃ ⊔ suc ℓ₄ ⊔ suc ℓ₅ ⊔ suc ℓ₆) {!!} {!!}
+  -- ℳℴ𝒹 𝒞 = record
+  --   { Obj = ModelType 𝒞
+  --   ; _⇒_ = ModelHomomorphism 𝒞
+  --   ; _≈_ = λ f g → {!(α : Type) → o!}
+  --   ; id = {!!}
+  --   ; _∘_ = {!!}
+  --   ; assoc = {!!}
+  --   ; sym-assoc = {!!}
+  --   ; identityˡ = {!!}
+  --   ; identityʳ = {!!}
+  --   ; identity² = {!!}
+  --   ; equiv = record
+  --     { refl = {!!}
+  --     ; sym = {!!}
+  --     ; trans = {!!}
+  --     }
+  --   ; ∘-resp-≈ = {!!}
+  --   }
+
 
 ```
 
