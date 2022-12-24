@@ -1,5 +1,5 @@
 ---
-title: Unary Type Theory
+title: Unary Ty Theory
 isIndex: true
 ---
 
@@ -14,7 +14,13 @@ open import Relation.Nullary using (yes; no)
 open import Data.String using (String; _≟_)
 open import Data.Product using (Σ; _,_; Σ-syntax)
 
-open import Categories.Category.Core using (Category)
+open import Categories.Category using
+  (Category; _[_,_]; _[_≈_]; _[_∘_]; module Definitions)
+open import Categories.Functor using (Functor)
+open import Categories.Category.Construction.Functors using (Functors)
+open import Categories.NaturalTransformation using
+  (NaturalTransformation) renaming (id to idN)
+import Categories.Morphism.Reasoning
 ```
 
 # 1. Syntax
@@ -23,14 +29,14 @@ open import Categories.Category.Core using (Category)
 
 ```agda
 variable
-  ℓ₁ ℓ₂ ℓ₃ ℓ₄ ℓ₅ ℓ₆ : Level
+  ℓ₁ ℓ₂ ℓ₃ ℓ₄ ℓ₅ ℓ₆ ℓ₄' ℓ₅' ℓ₆' : Level
 
 record Signature : Set (suc (ℓ₁ ⊔ ℓ₂)) where
   field
-    Type : Set ℓ₁
-    Function : Set ℓ₂
-    domain : Function → Type
-    codomain : Function → Type
+    Ty : Set ℓ₁
+    Fun : Set ℓ₂
+    Dom : Fun → Ty
+    Cod : Fun → Ty
 
 module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
   open Signature Sg public
@@ -43,7 +49,7 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
 
   data Term : Set ℓ₂ where
     `_  : Id → Term
-    _·_ : Function → Term → Term
+    _·_ : Fun → Term → Term
 
   FV : Term → Id
   FV (` x) = x
@@ -69,34 +75,35 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
 ```agda
   infix 5  _⦂_
   data Context : Set ℓ₁ where
-    _⦂_ : Id → Type → Context
+    _⦂_ : Id → Ty → Context
 
   infix 4 _⊢_˸_
-  data _⊢_˸_ : Context → Term → Type → Set (ℓ₁ ⊔ ℓ₂) where
+  data _⊢_˸_ : Context → Term → Ty → Set (ℓ₁ ⊔ ℓ₂) where
     ⊢` : ∀ {x α}
         -------------------
        → x ⦂ α ⊢ (` x) ˸ α
     ⊢· : ∀ {x α m β f}
        → (x ⦂ α) ⊢ m ˸ β
-       → domain f ≡ β
+       → Dom f ≡ β
        ------------------------------
-       → (x ⦂ α) ⊢ (f · m) ˸ codomain f
+       → (x ⦂ α) ⊢ (f · m) ˸ Cod f
 
+  infix 4 [_⊢_˸_][_]
   record ProvedTerm : Set (suc (ℓ₁ ⊔ ℓ₂)) where
     constructor [_⊢_˸_][_]
     field
       ctx : Context
       term : Term
-      type : Type
-      wit : ctx ⊢ term ˸ type
+      Ty : Ty
+      wit : ctx ⊢ term ˸ Ty
 
-  unique-types : ∀ {x α m β γ}
+  unique-Tys : ∀ {x α m β γ}
     → (x ⦂ α) ⊢ m ˸ β
     → (x ⦂ α) ⊢ m ˸ γ
     -----------------
     → β ≡ γ
-  unique-types ⊢` ⊢` = refl
-  unique-types (⊢· _ _) (⊢· _ _) = refl
+  unique-Tys ⊢` ⊢` = refl
+  unique-Tys (⊢· _ _) (⊢· _ _) = refl
 
   ⊢`-uniq₁ : ∀ {x y α β}
     → (x ⦂ α) ⊢ (` y) ˸ β
@@ -112,12 +119,12 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
 
   ⊢·-f₁ : ∀ {x α f m β}
     → (x ⦂ α) ⊢ f · m ˸ β
-    → (x ⦂ α) ⊢ m ˸ (domain f)
+    → (x ⦂ α) ⊢ m ˸ (Dom f)
   ⊢·-f₁ {x} {α} {f} {m} (⊢· t refl) = t
 
   ⊢·-f₂ : ∀ {x α f m γ}
     → (x ⦂ α) ⊢ f · m ˸ γ
-    → codomain f ≡ γ
+    → Cod f ≡ γ
   ⊢·-f₂ {x} {α} {f} {m} (⊢· t refl) = refl
 
   rename : ∀ {x α m β y}
@@ -152,7 +159,8 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
 ## 1.3. Theories
 
 ```agda
-  data _⊢_＝_˸_ : Context → Term → Term → Type → Set (ℓ₁ ⊔ ℓ₂) where
+  infix 4 _⊢_＝_˸_
+  data _⊢_＝_˸_ : Context → Term → Term → Ty → Set (ℓ₁ ⊔ ℓ₂) where
     ⊢＝ : ∀ {x α m m' β}
        → ((x ⦂ α) ⊢ m ˸ β)
        → ((x ⦂ α) ⊢ m' ˸ β)
@@ -181,14 +189,15 @@ module sigs (Sg : Signature {ℓ₁} {ℓ₂}) where
   ⊢＝-subst (⊢＝ e e') (⊢＝ e'' e''') =
     ⊢＝ (⊢-subst e e'') (⊢-subst e' e''')
 
+  infix 4 [_⊢_＝_˸_][_]
   record Equation : Set (ℓ₁ ⊔ ℓ₂) where
     constructor [_⊢_＝_˸_][_]
     field
       ctx : Context
       termˡ : Term
       termʳ : Term
-      type : Type
-      wit : ctx ⊢ termˡ ＝ termʳ ˸ type
+      Ty : Ty
+      wit : ctx ⊢ termˡ ＝ termʳ ˸ Ty
 
   record Theory : Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃)) where
     field
@@ -232,6 +241,7 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
          -------------------
        → Theorem [ (y ⦂ γ) ⊢ (m [ x := n ]) ＝
            (m' [ x := n' ]) ˸ β ][ ⊢＝-subst e e' ]
+
 ```
 
 # 2. Semantics
@@ -241,9 +251,9 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
 ```agda
   record Structure (𝒞 : Category ℓ₄ ℓ₅ ℓ₆) : Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₄ ⊔ ℓ₅ ⊔ ℓ₆)) where
     field
-      ⟦_⟧ₒ : Type → Category.Obj 𝒞
-      ⟦_⟧ₐ : (f : Function)
-           → Category._⇒_ 𝒞 ⟦ domain f ⟧ₒ ⟦ codomain f ⟧ₒ
+      ⟦_⟧ₒ : Ty → Category.Obj 𝒞
+      ⟦_⟧ₐ : (f : Fun)
+           → Category._⇒_ 𝒞 ⟦ Dom f ⟧ₒ ⟦ Cod f ⟧ₒ
 
 module _ (Sg : Signature {ℓ₁} {ℓ₂})
          (Th : sigs.Theory {ℓ₁} {ℓ₂} Sg {ℓ₃})
@@ -266,8 +276,8 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
     ⟦ f ⟧ₐ ∘ (⟦⟧-helper (x ⦂ α) m θ t)
 
   ⟦_⟧ : (t : ProvedTerm)
-      → (Ctx⟦ ProvedTerm.ctx t ⟧) ⇒ (⟦ ProvedTerm.type t ⟧ₒ)
-  ⟦ [ ctx ⊢ term ˸ type ][ wit ] ⟧ = ⟦⟧-helper ctx term type wit
+      → (Ctx⟦ ProvedTerm.ctx t ⟧) ⇒ (⟦ ProvedTerm.Ty t ⟧ₒ)
+  ⟦ [ ctx ⊢ term ˸ Ty ][ wit ] ⟧ = ⟦⟧-helper ctx term Ty wit
 
   ⟦⟧-irrelevance : ∀ {x α m m' β}
     → m ≡ m'
@@ -296,18 +306,17 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
   ⟦⟧-subst {x} {α} {f · m} {β} {y} {θ} {n} (⊢· t refl) w = begin
     ⟦ [ y ⦂ θ ⊢ (f · m) [ x := n ] ˸ β ][ ⊢-subst (⊢· t refl) w ] ⟧ ≡⟨⟩
     ⟦ [ y ⦂ θ ⊢ f · (m [ x := n ]) ˸ β ][ ⊢-subst (⊢· t refl) w ] ⟧ ≡⟨⟩
-    ⟦ f ⟧ₐ ∘ ⟦ [ y ⦂ θ ⊢ m [ x := n ] ˸ domain f ][ ⊢-subst t w  ] ⟧ ≈⟨ ind ⟩
-    ⟦ f ⟧ₐ ∘ ((⟦ [ (x ⦂ α) ⊢ m ˸ domain f ][ t ] ⟧) ∘
+    ⟦ f ⟧ₐ ∘ ⟦ [ y ⦂ θ ⊢ m [ x := n ] ˸ Dom f ][ ⊢-subst t w  ] ⟧ ≈⟨ ind ⟩
+    ⟦ f ⟧ₐ ∘ ((⟦ [ (x ⦂ α) ⊢ m ˸ Dom f ][ t ] ⟧) ∘
                (⟦ [ (y ⦂ θ) ⊢ n ˸ α ][ w ] ⟧)) ≈˘⟨ assoc ⟩
-    (⟦ f ⟧ₐ ∘ (⟦ [ (x ⦂ α) ⊢ m ˸ domain f ][ t ] ⟧)) ∘
-               (⟦ [ (y ⦂ θ) ⊢ n ˸ α ][ w ] ⟧) ≈⟨ rearrenge ⟩
+    (⟦ f ⟧ₐ ∘ (⟦ [ (x ⦂ α) ⊢ m ˸ Dom f ][ t ] ⟧)) ∘
+               (⟦ [ (y ⦂ θ) ⊢ n ˸ α ][ w ] ⟧) ≈⟨ rearrange ⟩
     ⟦ [ x ⦂ α ⊢ f · m ˸ β ][ ⊢· t refl ] ⟧ ∘
       ⟦ [ y ⦂ θ ⊢ n ˸ α ][ w ] ⟧ ∎
    where
     ind = ∘-resp-≈ʳ (⟦⟧-subst t w)
-    rearrenge = ∘-resp-≈ˡ Equiv.refl
+    rearrange = ∘-resp-≈ˡ Equiv.refl
 ```
-
 
 ## 2.2. Models
 
@@ -365,44 +374,121 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
   open sigs Sg
   open Theory Th
 
-  ModelType : Category ℓ₄ ℓ₅ ℓ₆ → Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₄ ⊔ ℓ₅ ⊔ ℓ₆))
-  ModelType 𝒞 = Σ (Structure Sg Th 𝒞) (λ ℳ → models Sg Th 𝒞 ℳ)
+  record ℳℴ𝒹ₒ (𝒞 : Category ℓ₄ ℓ₅ ℓ₆) : Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₄ ⊔ ℓ₅ ⊔ ℓ₆)) where
+    field
+      ℳℴ𝒹⟦⟧ : Structure Sg Th 𝒞
+      ℳℴ𝒹⊨ : models Sg Th 𝒞 ℳℴ𝒹⟦⟧
 
-  module _ (𝒞 : Category ℓ₄ ℓ₅ ℓ₆)
-           ((ℳ , ℳ⟦⟧) (𝒩 , 𝒩⟦⟧) : ModelType 𝒞) where
+  open ℳℴ𝒹ₒ public
+
+  record ℳℴ𝒹ₐ (𝒞 : Category ℓ₄ ℓ₅ ℓ₆)
+              (ℳ 𝒩 : ℳℴ𝒹ₒ 𝒞)
+             : Set (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₄ ⊔ ℓ₅ ⊔ ℓ₆)) where
+    private
+      module ℳ = Structure (ℳℴ𝒹⟦⟧ ℳ)
+      module 𝒩 = Structure (ℳℴ𝒹⟦⟧ 𝒩)
     open Category 𝒞
-    ℳ⟦_⟧ₒ = Structure.⟦_⟧ₒ ℳ
-    𝒩⟦_⟧ₒ = Structure.⟦_⟧ₒ 𝒩
-    ℳ⟦_⟧ₐ = Structure.⟦_⟧ₐ ℳ
-    𝒩⟦_⟧ₐ = Structure.⟦_⟧ₐ 𝒩
+    open Definitions 𝒞
+    field
+      comp : (α : Ty) → ℳ.⟦ α ⟧ₒ ⇒ 𝒩.⟦ α ⟧ₒ
+      square : (f : Fun) → CommutativeSquare (ℳ.⟦ f ⟧ₐ) (comp (Dom f)) (comp (Cod f)) (𝒩.⟦ f ⟧ₐ)
+  open ℳℴ𝒹ₐ public
 
-    ModelHomomorphism : Set (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₅ ⊔ ℓ₆)
-    ModelHomomorphism  =
-        (h : (α : Type) →  ℳ⟦ α ⟧ₒ ⇒ 𝒩⟦ α ⟧ₒ)
-      → (f : Function)
-      → (h (codomain f) ∘ ℳ⟦ f ⟧ₐ) ≈ (𝒩⟦ f ⟧ₐ ∘ h (domain f))
+  ℳℴ𝒹 : Category ℓ₄ ℓ₅ ℓ₆ → Category (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₄ ⊔ ℓ₅ ⊔ ℓ₆))
+    (suc (ℓ₁ ⊔ ℓ₂ ⊔ ℓ₃ ⊔ ℓ₄ ⊔ ℓ₅ ⊔ ℓ₆)) (ℓ₁ ⊔ ℓ₆)
+  ℳℴ𝒹 𝒞 = record
+    { Obj = ℳℴ𝒹ₒ 𝒞
+    ; _⇒_ = ℳℴ𝒹ₐ 𝒞
+    ; _≈_ = λ {ℳ} {𝒩} h h' → (α : Ty) → comp h α ≈ comp h' α
+    ; id = record
+      { comp = λ α → id
+      ; square = λ f → identityˡ ○ ⟺ identityʳ
+      }
+    ; _∘_ = λ h' h → record
+      { comp = λ α → comp h' α ∘ comp h α
+      ; square = λ f → glue (square h' f) (square h f)
+      }
+    ; assoc = λ α → assoc
+    ; sym-assoc = λ α → sym-assoc
+    ; identityˡ = λ α → identityˡ
+    ; identityʳ = λ α → identityʳ
+    ; identity² = λ α → identity²
+    ; equiv = record
+      { refl = λ h → Equiv.refl
+      ; sym = λ h α → Equiv.sym (h α)
+      ; trans = λ h' h α → Equiv.trans (h' α) (h α)
+      }
+    ; ∘-resp-≈ = λ p' p α → ∘-resp-≈ (p' α) (p α)
+    }
+      where
+        open Category 𝒞
+        open HomReasoning
+        open Categories.Morphism.Reasoning 𝒞
 
-  -- ℳℴ𝒹 : Category ℓ₄ ℓ₅ ℓ₆ → Category (suc ℓ₁ ⊔ suc ℓ₂ ⊔ suc ℓ₃ ⊔ suc ℓ₄ ⊔ suc ℓ₅ ⊔ suc ℓ₆) {!!} {!!}
-  -- ℳℴ𝒹 𝒞 = record
-  --   { Obj = ModelType 𝒞
-  --   ; _⇒_ = ModelHomomorphism 𝒞
-  --   ; _≈_ = λ f g → {!(α : Type) → o!}
-  --   ; id = {!!}
-  --   ; _∘_ = {!!}
-  --   ; assoc = {!!}
-  --   ; sym-assoc = {!!}
-  --   ; identityˡ = {!!}
-  --   ; identityʳ = {!!}
-  --   ; identity² = {!!}
-  --   ; equiv = record
-  --     { refl = {!!}
-  --     ; sym = {!!}
-  --     ; trans = {!!}
-  --     }
-  --   ; ∘-resp-≈ = {!!}
-  --   }
+  _₊ : {𝒞 : Category ℓ₄ ℓ₅ ℓ₆} {𝒟 : Category ℓ₄' ℓ₅' ℓ₆'}
+     → Functor 𝒞 𝒟
+     → ℳℴ𝒹ₒ 𝒞 → ℳℴ𝒹ₒ 𝒟
+  _₊ {𝒞 = 𝒞} {𝒟} F ℳ = record
+    { ℳℴ𝒹⟦⟧ = ℳℴ𝒹⟦⟧₊
+    ; ℳℴ𝒹⊨ = ℳℴ𝒹⊨₊
+    }
+    where
+      open Functor F
+      module ℳ = Structure (ℳℴ𝒹⟦⟧ ℳ)
+      open Category 𝒟
+      open HomReasoning
+      ℳℴ𝒹⟦⟧₊ = record
+        { ⟦_⟧ₒ = λ α → F₀ ℳ.⟦ α ⟧ₒ
+        ; ⟦_⟧ₐ = λ f → F₁ ℳ.⟦ f ⟧ₐ
+        }
 
+      ℳ⟦_⟧ = ⟦_⟧ Sg Th 𝒞 (ℳℴ𝒹⟦⟧ ℳ)
+      Fℳ⟦_⟧ = ⟦_⟧ Sg Th 𝒟 ℳℴ𝒹⟦⟧₊
 
+      lemma : ∀ {x α m β w} →
+        Fℳ⟦ [ x ⦂ α ⊢ m ˸ β ][ w ] ⟧ ≈
+        F₁ ℳ⟦ [ x ⦂ α ⊢ m ˸ β ][ w ] ⟧
+      lemma {w = ⊢`} = Equiv.sym identity
+      lemma {x} {α} {(f · m)} {β} {w = ⊢· t refl} =
+        begin
+          Fℳ⟦ [ x ⦂ α ⊢ f · m ˸ Cod f ][ ⊢· t refl ] ⟧          ≡⟨⟩
+          F₁ ℳ.⟦ f ⟧ₐ ∘ Fℳ⟦ [ x ⦂ α ⊢ m ˸ Dom f ][ t ] ⟧        ≈⟨ refl⟩∘⟨ lemma {w = t} ⟩
+          F₁ ℳ.⟦ f ⟧ₐ ∘ F₁ ℳ⟦ [ x ⦂ α ⊢ m ˸ Dom f ][ t ] ⟧      ≈˘⟨ homomorphism ⟩
+          F₁ (𝒞 [ ℳ.⟦ f ⟧ₐ ∘ ℳ⟦ [ x ⦂ α ⊢ m ˸ Dom f ][ t ] ⟧ ]) ≡⟨⟩
+          F₁ (ℳ⟦ [ x ⦂ α ⊢ f · m ˸ Cod f ][ ⊢· t refl ] ⟧)      ∎
+
+      ℳℴ𝒹⊨₊ : models Sg Th 𝒟 ℳℴ𝒹⟦⟧₊
+      ℳℴ𝒹⊨₊ eq@{[ x ⦂ α ⊢ m ＝ m' ˸ β ][ ⊢＝ w w' ]} M =
+        begin
+          Fℳ⟦ [ x ⦂ α ⊢ m ˸ β ][ w ] ⟧     ≈⟨ lemma {w = w} ⟩
+          F₁ ℳ⟦ [ x ⦂ α ⊢ m ˸ β ][ w ] ⟧   ≈⟨ F-resp-≈ ((ℳℴ𝒹⊨ ℳ) M) ⟩
+          F₁ ℳ⟦ [ x ⦂ α ⊢ m' ˸ β ][ w' ] ⟧ ≈˘⟨ lemma {w = w'} ⟩
+          Fℳ⟦ [ x ⦂ α ⊢ m' ˸ β ][ w' ] ⟧   ∎
+
+  Ap₁ : {𝒞 : Category ℓ₄ ℓ₅ ℓ₆} {𝒟 : Category ℓ₄' ℓ₅' ℓ₆'}
+       (ℳ : ℳℴ𝒹ₒ 𝒞)
+       {F G : Functor 𝒞 𝒟}
+     → Functors 𝒞 𝒟 [ F , G ] → ℳℴ𝒹 𝒟 [ (F ₊) ℳ , (G ₊) ℳ ]
+  Ap₁ {𝒞 = 𝒞} {𝒟} ℳ {F} {G} ϕ = record
+    { comp = λ α → ϕ.η ℳ.⟦ α ⟧ₒ 
+    ; square = λ f → ϕ.commute (ℳ.⟦ f ⟧ₐ)
+    }
+    where
+      module ℳ = Structure (ℳℴ𝒹⟦⟧ ℳ)
+      module ϕ = NaturalTransformation ϕ
+
+  Ap : {𝒞 : Category ℓ₄ ℓ₅ ℓ₆} {𝒟 : Category ℓ₄' ℓ₅' ℓ₆'}
+     → ℳℴ𝒹ₒ 𝒞
+     → Functor (Functors 𝒞 𝒟) (ℳℴ𝒹 𝒟)
+  Ap {𝒞 = 𝒞} {𝒟} ℳ = record
+    { F₀ = λ F → (F ₊) ℳ
+    ; F₁ = Ap₁ ℳ
+    ; identity = λ α → Equiv.refl
+    ; homomorphism = λ α → Equiv.refl
+    ; F-resp-≈ = λ f≈g α → f≈g
+    }
+    where
+      open Category 𝒟
 ```
 
 ## 2.4. Clasifying category
