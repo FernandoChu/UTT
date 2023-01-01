@@ -19,6 +19,7 @@ open import Categories.Category using
   (Category; _[_,_]; _[_≈_]; _[_∘_]; module Definitions)
 open import Categories.Functor using (Functor)
 open import Categories.Category.Construction.Functors using (Functors)
+open import Categories.Category.Equivalence using (StrongEquivalence)
 open import Categories.NaturalTransformation using
   (NaturalTransformation) renaming (id to idN)
 import Categories.Morphism.Reasoning
@@ -751,7 +752,7 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
       goal = Th-wit-irrelevance Sg Th
         ((Th-≡ Sg Th {w =  ⊢＝ ⊢` (⊢-subst ⊢` ⊢`)}
           ⊢` (sym (subst-≡ {x} {` x} {` "x"} refl))))
-  𝒞𝓁-⟦⟧ {x} {α} {.(f · m)} {.(Cod f)} {sigs.⊢· {x} {α} {m} {β} {f} w refl} = goal
+  𝒞𝓁-⟦⟧ {x} {α} {.(f · m)} {.(Cod f)} {⊢· {x} {α} {m} {β} {f} w refl} = goal
     where
       open Category 𝒞𝓁
       open HomReasoning
@@ -794,7 +795,203 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
 ## 2.5. Correspondence Theorem
 
 ```agda
+  Ap⁻¹𝒢₀ : {𝒟 : Category ℓ₄' ℓ₅' ℓ₆'}
+         → Category.Obj (ℳℴ𝒹 𝒟) → Functor 𝒞𝓁 𝒟
+  Ap⁻¹𝒢₀ {𝒟 = 𝒟} ℳ = record
+    { F₀ = λ α → ℳ.⟦ α ⟧ₒ
+    ; F₁ = F₁
+    ; identity = Equiv.refl
+    ; homomorphism = λ {α} {β} {θ} {f} {g} → homo {f = f} {g}
+    ; F-resp-≈ = λ {α} {β} {f} {g} → resp {f = f} {g}
+    }
+    where
+      open Category 𝒟
+      open HomReasoning
+      module ℳ = Structure (ℳℴ𝒹⟦⟧ ℳ)
+      ℳ⟦_⟧ = ⟦_⟧ Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ℳ)
+      F₁ : ∀ {A B} (f : 𝒞𝓁 [ A , B ]) → 𝒟 [  ℳ.⟦ A ⟧ₒ ,  ℳ.⟦ B ⟧ₒ ]
+      F₁ = λ where
+        𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩
+          → ℳ⟦ [ x ⦂ α ⊢ m ˸ β ][ w ] ⟧
+      homo : ∀ {X Y Z} {f : 𝒞𝓁 [ X , Y ]} {g : 𝒞𝓁 [ Y , Z ]} →
+                     𝒟 [ F₁ (𝒞𝓁 [ g ∘ f ]) ≈ 𝒟 [ F₁ g ∘ F₁ f ] ]
+      homo
+        {α} {β} {θ}
+          { 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ }
+          { 𝒞𝓁ₐ⟨ [ y ⦂ β ⊢ m' ˸ θ ][ w' ] , refl , refl ⟩ } =
+          ⟦⟧-subst Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ℳ) w' w
+      resp : ∀ {A B} {f g : 𝒞𝓁 [ A , B ]} → 𝒞𝓁 [ f ≈ g ] → 𝒟 [ F₁ f ≈ F₁ g ]
+      resp {α} {β}
+        { 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ }
+        { 𝒞𝓁ₐ⟨ [ y ⦂ α ⊢ m' ˸ β ][ w' ] , refl , refl ⟩ }
+        th
+        = begin
+          ℳ⟦ [ x ⦂ α ⊢ m ˸ β ][ w ] ⟧ ≈⟨ i ⟩
+          ℳ⟦ [ x ⦂ α ⊢ m' [ y := ` x ] ˸ β ][ ⊢-subst w' ⊢` ] ⟧ ≈⟨ ii ⟩
+          ℳ⟦ [ y ⦂ α ⊢ m' ˸ β ][ w' ] ⟧ ∘ ℳ⟦ [ x ⦂ α ⊢ ` x ˸ α ][ ⊢` ] ⟧ ≈⟨ iii ⟩
+          ℳ⟦ [ y ⦂ α ⊢ m' ˸ β ][ w' ] ⟧ ∎
+          where
+            i = Soundness Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ℳ) (ℳℴ𝒹⊨ ℳ) _ th
+            ii = ⟦⟧-subst Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ℳ) w' ⊢`
+            iii = identityʳ
 
+  Ap⁻¹𝒢₁ : {𝒟 : Category ℓ₄' ℓ₅' ℓ₆'}
+           {ℳ 𝒩 : ℳℴ𝒹ₒ 𝒟}
+         → ℳℴ𝒹 𝒟 [ ℳ , 𝒩 ] → Functors 𝒞𝓁 𝒟 [ Ap⁻¹𝒢₀ ℳ , Ap⁻¹𝒢₀ 𝒩 ]
+  Ap⁻¹𝒢₁ {𝒟 = 𝒟} {ℳ} {𝒩} record { comp = comp ; square = square } = record
+    { η = comp
+    ; commute = λ { 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩
+       → comm-helper x α m β w}
+    ; sym-commute = λ { 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩
+       → Equiv.sym (comm-helper x α m β w)}
+    }
+    where
+      open Category 𝒟
+      open HomReasoning
+      module ℳ = Structure (ℳℴ𝒹⟦⟧ ℳ)
+      module 𝒩 = Structure (ℳℴ𝒹⟦⟧ 𝒩)
+      ℳ⟦_⟧ = ⟦_⟧ Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ℳ)
+      𝒩⟦_⟧ = ⟦_⟧ Sg Th 𝒟 (ℳℴ𝒹⟦⟧ 𝒩)
+
+      comm-helper : ∀ x α m β
+       → (w : x ⦂ α ⊢ m ˸ β)
+       → (comp β ∘
+            ℳ⟦ [ x ⦂ α ⊢ m ˸ β ][ w ] ⟧) ≈
+         ((𝒩⟦ [ x ⦂ α ⊢ m ˸ β ][ w ] ⟧)
+               ∘ comp α)
+      comm-helper x α .(` x) .α ⊢` = begin
+        (comp α ∘
+          ℳ⟦ [ x ⦂ α ⊢ ` x ˸ α ][ ⊢` ] ⟧) ≈⟨ identityʳ ⟩
+        comp α  ≈˘⟨ identityˡ ⟩
+        (id ∘ comp α) ∎
+      comm-helper x α .(f · m) .(Cod f) (⊢· {x} {α} {m} {β} {f} w refl) = begin
+        (comp (Cod f) ∘
+          ℳ⟦ [ x ⦂ α ⊢ f · m ˸ Cod f ][ ⊢· w refl ] ⟧) ≡⟨⟩
+        (comp (Cod f) ∘
+          (ℳ.⟦ f ⟧ₐ ∘ ℳ⟦ [ x ⦂ α ⊢ m ˸ Dom f ][ w ] ⟧)) ≈⟨ sym-assoc ⟩
+        (comp (Cod f) ∘
+          ℳ.⟦ f ⟧ₐ) ∘ ℳ⟦ [ x ⦂ α ⊢ m ˸ Dom f ][ w ] ⟧ ≈⟨ square f ⟩∘⟨refl ⟩
+        (𝒩.⟦ f ⟧ₐ ∘
+          comp (Dom f)) ∘ ℳ⟦ [ x ⦂ α ⊢ m ˸ Dom f ][ w ] ⟧ ≈⟨ assoc ⟩
+        (𝒩.⟦ f ⟧ₐ ∘
+          (comp (Dom f) ∘ ℳ⟦ [ x ⦂ α ⊢ m ˸ Dom f ][ w ] ⟧)) ≈⟨ refl⟩∘⟨ comm-helper x α m (Dom f) w ⟩
+        (𝒩.⟦ f ⟧ₐ ∘
+           (𝒩⟦ [ (x ⦂ α) ⊢ m ˸ (Dom f) ][ w ] ⟧ ∘ comp α)) ≈⟨ sym-assoc ⟩
+        ((𝒩.⟦ f ⟧ₐ ∘
+           𝒩⟦ [ (x ⦂ α) ⊢ m ˸ (Dom f) ][ w ] ⟧)
+          ∘ comp α) ∎
+
+  Ap⁻¹𝒢 : {𝒟 : Category ℓ₄' ℓ₅' ℓ₆'}
+     → Functor (ℳℴ𝒹 𝒟) (Functors 𝒞𝓁 𝒟)
+  Ap⁻¹𝒢 {𝒟 = 𝒟} = record
+    { F₀ = Ap⁻¹𝒢₀
+    ; F₁ = Ap⁻¹𝒢₁
+    ; identity = Equiv.refl
+    ; homomorphism = Equiv.refl
+    ; F-resp-≈ = λ f {α} → f α
+    }
+      where open Category 𝒟
+
+  ClassCat : {𝒟 : Category ℓ₄' ℓ₅' ℓ₆'}
+           → StrongEquivalence (Functors 𝒞𝓁 𝒟) (ℳℴ𝒹 𝒟)
+  ClassCat {𝒟 = 𝒟} = record
+    { F = Ap 𝒢
+    ; G = Ap⁻¹𝒢
+    ; weak-inverse = record
+      { F∘G≈id = record
+        { F⇒G = record
+          { η = λ ℳ → record
+            { comp = λ α → id
+            ; square = λ f → identityˡ
+            }
+          ; commute = λ f α → identityˡ ○ (⟺ identityʳ)
+          ; sym-commute = λ f α → identityʳ ○ (⟺ identityˡ)
+          }
+        ; F⇐G = record
+          { η = λ ℳ → record
+            { comp = λ α → id
+            ; square = λ f → identityˡ ○ (⟺ identityʳ) ○ (⟺ identityʳ)
+            }
+          ; commute = λ f α → identityˡ ○ (⟺ identityʳ)
+          ; sym-commute = λ {ℳ} {𝒩} f α → identityʳ ○ (⟺ identityˡ)
+          }
+        ; iso = λ ℳ → record
+          { isoˡ = λ α → identityˡ
+          ; isoʳ = λ α → identityˡ
+          }
+        }
+      ; G∘F≈id = record
+        { F⇒G = record
+          { η = λ F → record
+            { η = λ α → id
+            ; commute = λ { {α} {β} 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ → begin
+                id ∘ ⟦⟧-helper Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ((F ₊) 𝒢)) (x ⦂ α) m β w ≈⟨ identityˡ ⟩
+                ⟦⟧-helper Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ((F ₊) 𝒢)) (x ⦂ α) m β w ≈⟨ lemma {w = w} {F} ⟩
+                Functor.F₁ F 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ ≈˘⟨ identityʳ ⟩
+                Functor.F₁ F 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ ∘ id ∎ }
+            ; sym-commute = λ { {α} {β} 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ → begin
+                Functor.F₁ F 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ ∘ id ≈⟨ identityʳ ⟩
+                Functor.F₁ F 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ ≈˘⟨ lemma {w = w} {F} ⟩
+                ⟦⟧-helper Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ((F ₊) 𝒢)) (x ⦂ α) m β w ≈˘⟨ identityˡ ⟩
+                id ∘ ⟦⟧-helper Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ((F ₊) 𝒢)) (x ⦂ α) m β w ∎ }
+            }
+          ; commute = λ θ → identityˡ ○ (⟺ identityʳ)
+          ; sym-commute = λ θ → identityʳ ○ (⟺ identityˡ)
+          }
+        ; F⇐G = record
+          { η = λ F → record
+            { η = λ α → id
+            ; commute = λ { {α} {β} 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ → begin
+                id ∘ Functor.F₁ F 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ ≈⟨ identityˡ ⟩
+                Functor.F₁ F 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ ≈˘⟨ lemma {w = w} {F} ⟩
+                ⟦⟧-helper Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ((F ₊) 𝒢)) (x ⦂ α) m β w ≈˘⟨ identityʳ ⟩
+                ⟦⟧-helper Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ((F ₊) 𝒢)) (x ⦂ α) m β w ∘ id ∎ }
+            ; sym-commute = λ { {α} {β} 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩ →
+                identityʳ ○ lemma {w = w} {F} ○ (⟺ identityˡ) }
+            }
+          ; commute = λ θ → identityˡ ○ (⟺ identityʳ)
+          ; sym-commute = λ θ → identityʳ ○ (⟺ identityˡ)
+          }
+        ; iso = λ F → record
+          { isoˡ = λ {α} → identityˡ
+          ; isoʳ = λ {α} → identityˡ
+          }
+        }
+      }
+    }
+    where
+      open Category 𝒟
+      open HomReasoning
+      lemma : ∀ {x α m β w F} →
+        ⟦⟧-helper Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ((F ₊) 𝒢)) (x ⦂ α) m β w ≈
+        Functor.F₁ F 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ β ][ w ] , refl , refl ⟩
+      lemma {x} {α} {.(` x)} {.α} {⊢`} {F} =
+        begin
+          id  ≈˘⟨ Functor.identity F ⟩
+          Functor.F₁ F 𝒞𝓁ₐ⟨ [ "x" ⦂ α ⊢ ` "x" ˸ α ][ ⊢` ] , refl , refl ⟩ ≈⟨ Functor.F-resp-≈ F lemma' ⟩
+          Functor.F₁ F 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ ` x ˸ α ][ ⊢` ] , refl , refl ⟩ ∎
+        where
+          lemma' : Theorem Sg Th
+            [ "x" ⦂ α ⊢ ` "x" ＝ ((` x) [ x := (` "x") ]) ˸ α ][ ⊢＝ ⊢` (⊢-subst ⊢` ⊢` ) ]
+          lemma' = Th-wit-irrelevance Sg Th (Th-≡ Sg Th {w = ⊢＝ ⊢` (⊢-subst ⊢` ⊢` )} ⊢` (sym (`-subst {x})))
+      lemma {x} {α} {(f · m)} {β} {⊢· w refl} {F} =
+        begin
+          Functor.F₁ F 𝒞𝓁ₐ⟨ [ "x" ⦂ Dom f ⊢ f · ` "x" ˸ Cod f ][ ⊢· ⊢` refl ] , refl , refl ⟩
+            ∘ ⟦⟧-helper Sg Th 𝒟 (ℳℴ𝒹⟦⟧ ((F ₊) 𝒢)) (x ⦂ α) m (Dom f) w ≈⟨ refl⟩∘⟨ lemma {w = w} {F} ⟩
+          Functor.F₁ F 𝒞𝓁ₐ⟨ [ "x" ⦂ Dom f ⊢ f · ` "x" ˸ Cod f ][ ⊢· ⊢` refl ] , refl , refl ⟩
+            ∘ Functor.F₁ F 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ Dom f ][ w ] , refl , refl ⟩ ≈˘⟨ Functor.homomorphism F ⟩
+          Functor.F₁ F (𝒞𝓁 [ 𝒞𝓁ₐ⟨ [ "x" ⦂ Dom f ⊢ f · ` "x" ˸ Cod f ][ ⊢· ⊢` refl ] , refl , refl ⟩
+            ∘ 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ m ˸ Dom f ][ w ] , refl , refl ⟩ ]) ≡⟨⟩
+          Functor.F₁ F 𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ (f · ` "x") [ "x" := m ] ˸ Cod f ][
+                              ⊢-subst (⊢· (⊢` {"x"}) refl) w ] , refl , refl ⟩ ≈⟨ Functor.F-resp-≈ F lemma' ⟩
+          Functor.F₁ F
+            𝒞𝓁ₐ⟨ [ x ⦂ α ⊢ f · m ˸ Cod f ][ ⊢· w refl ] , refl , refl ⟩ ∎
+        where
+          lemma' : Theorem Sg Th [ x ⦂ α ⊢ (f · ` "x") [ "x" := m ] ＝ (f · m) [ x := ` x ] ˸ Cod f
+                                   ][ ⊢＝ (⊢-subst (⊢· (⊢` {"x"}) refl) w) (⊢-subst (⊢· w refl) ⊢`) ]
+          lemma' = Th-wit-irrelevance Sg Th
+            (Th-≡ Sg Th {w = ⊢＝ (⊢-subst (⊢· (⊢` {"x"}) refl) w) (⊢-subst (⊢· w refl) ⊢`)}
+            (⊢-subst (⊢· (⊢` {"x"}) refl) w) (sym (subst-id (f · m))))
 ```
 
 ## 3. Example
