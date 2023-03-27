@@ -1,5 +1,5 @@
 ---
-title: Unary Ty Theory
+title: Unary Type Theory
 isIndex: true
 ---
 
@@ -792,7 +792,7 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
     }
 ```
 
-## 2.5. Correspondence Theorem
+## 2.5. The Correspondence Theorem
 
 ```agda
   Ap⁻¹𝒢₀ : {𝒟 : Category ℓ₄' ℓ₅' ℓ₆'}
@@ -992,10 +992,4 @@ module _ (Sg : Signature {ℓ₁} {ℓ₂})
           lemma' = Th-wit-irrelevance Sg Th
             (Th-≡ Sg Th {w = ⊢＝ (⊢-subst (⊢· (⊢` {"x"}) refl) w) (⊢-subst (⊢· w refl) ⊢`)}
             (⊢-subst (⊢· (⊢` {"x"}) refl) w) (sym (subst-id (f · m))))
-```
-
-## 3. Example
-
-```agda
-
 ```
