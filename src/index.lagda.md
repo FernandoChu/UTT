@@ -24,6 +24,13 @@ open import Categories.NaturalTransformation using
   (NaturalTransformation) renaming (id to idN)
 import Categories.Morphism.Reasoning
 ```
+# 0. Introduction
+
+In this short Agda file, a type theory representing the internal language of
+categories is introduced. Its syntax is presented in Section 1, and a
+correspondence/initiality theorem is proven in Section 2, more precisely, it
+is proven that there is a strong equivalence between (functors from the
+classifying category to a category `D`) and models of the type theory in `D`.
 
 # 1. Syntax
 
